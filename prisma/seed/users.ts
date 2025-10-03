@@ -1,5 +1,6 @@
 // prisma/seeds/users.ts
 import type { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 type BareUser = {
   email: string;
@@ -118,10 +119,27 @@ const targets: BareUser[] = [
   },
 ];
 
+const bcryptRounds = 10;
+const isBcryptHash = (s: string | null | undefined) =>
+  typeof s === 'string' && /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(s);
+
 export async function seedUsers(prisma: PrismaClient) {
-  const all = [...haters, ...targets];
+  const all: BareUser[] = [
+    // ...spread your haters & targets here
+    ...haters,
+    ...targets,
+  ];
 
   for (const u of all) {
+    const existing = await prisma.user.findUnique({
+      where: { email: u.email },
+    });
+
+    const hashed =
+      existing && isBcryptHash(existing.password)
+        ? existing.password
+        : await bcrypt.hash(u.password, bcryptRounds);
+
     await prisma.user.upsert({
       where: { email: u.email },
       update: {
@@ -129,11 +147,13 @@ export async function seedUsers(prisma: PrismaClient) {
         bio: u.bio ?? null,
         avatarUrl: u.avatarUrl ?? null,
         shadeScore: u.shadeScore ?? 0,
+        // keep password hashed (re-hash only if it was plaintext)
+        password: hashed,
       },
       create: {
         email: u.email,
         username: u.username,
-        password: u.password, // NOTE: replace with a hash before prod!
+        password: hashed, // NOTE: replace with a hash before prod!
         bio: u.bio ?? null,
         avatarUrl: u.avatarUrl ?? null,
         shadeScore: u.shadeScore ?? 0,
