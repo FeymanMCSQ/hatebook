@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enemyCount Int     @default(0)
+  shadeScore Int     @default(0)
+  bio        String?
+  avatarUrl  String?
+
+  // Back-relations (two sides of the self relation)
+  enemiesInitiated Enemy[] @relation("UserToEnemies") // I marked someone as my enemy
+  enemiesReceived  Enemy[] @relation("EnemyToUser")   // someone marked me as their enemy
+
+  posts      Post[]
+
+  reactions Reaction[]
+
+}
+
+model Enemy {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId   String   // initiator
+  enemyId  String   // target
+
+  user     User @relation("UserToEnemies", fields: [userId], references: [id])
+  enemy    User @relation("EnemyToUser",   fields: [enemyId], references: [id])
+
+  @@unique([userId, enemyId]) // prevent duplicates
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  authorId  String
+  author    User @relation(fields: [authorId], references: [id])
+
+  reactions Reaction[]
+
+}
+
+enum ReactionType {
+  SHADE   // throw extra shade
+  BOO     // boo the post
+  MUM     // stay silent (passive-aggressive)
+}
+
+model Reaction {
+  id        String       @id @default(cuid())
+  createdAt DateTime     @default(now())
+
+  type      ReactionType
+
+  // Who reacted
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+
+  // Which post got the reaction
+  postId    String
+  post      Post         @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId]) // each user can react only once per post
+}
