@@ -1,55 +1,67 @@
 import PostCard from '@/components/Postcard';
+import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth/next';
+import { authConfig } from '@/lib/auth';
 
-type Post = {
-  id: string;
-  content: string;
-  createdAt: string;
-  author: { username: string; avatarUrl?: string | null };
-};
+function timeAgo(iso: Date) {
+  const d = new Date(iso);
+  const diff = Math.max(0, Date.now() - d.getTime());
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
 
-const POSTS: Post[] = [
-  {
-    id: 'p1',
-    content:
-      'Reed’s ‘genius’? A statistical anomaly. Bow before a true monarch.',
-    createdAt: '2h ago',
-    author: { username: 'doctor_doom' },
-  },
-  {
-    id: 'p2',
-    content:
-      'If adoration is the metric, then mediocrity must be the standard. Looking at you, alien.',
-    createdAt: '3h ago',
-    author: { username: 'lex_luthor' },
-  },
-  {
-    id: 'p3',
-    content: 'P MENACE! Read my op-ed. And the retraction? Never.',
-    createdAt: '5h ago',
-    author: { username: 'j_jonah_jameson' },
-  },
-  {
-    id: 'p4',
-    content: 'Art is dead. Noise is alive. Guess which one you are, SpongeBob.',
-    createdAt: '8h ago',
-    author: { username: 'squidward' },
-  },
-  {
-    id: 'p5',
-    content:
-      'Victory shall be mine—once I’m done scheduling mother’s downfall.',
-    createdAt: '1d ago',
-    author: { username: 'stewie_griffin' },
-  },
-  {
-    id: 'p6',
-    content: 'Scarhead’s fame is an accident. Mine is destiny.',
-    createdAt: '2d ago',
-    author: { username: 'draco_malfoy' },
-  },
-];
+export default async function FeedPage() {
+  const session = await getServerSession(authConfig);
+  if (!session?.user) {
+    return (
+      <div className="mx-auto max-w-2xl p-6 text-center text-zinc-400">
+        Please sign in to see your feed.
+      </div>
+    );
+  }
 
-export default function FeedPage() {
+  // 1. Find enemy IDs
+  const enemies = await prisma.enemy.findMany({
+    where: { userId: session.user.id },
+    select: { enemyId: true },
+  });
+  const enemyIds = enemies.map((e) => e.enemyId);
+
+  // 2. Get posts (enemy posts first, then others)
+  const enemyPosts = await prisma.post.findMany({
+    where: {
+      authorId: { in: enemyIds, not: session.user.id },
+    },
+    include: { author: true },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+  });
+
+  // 2) Other posts (not enemies, not you)
+  const otherPosts = await prisma.post.findMany({
+    where: {
+      AND: [
+        { authorId: { notIn: enemyIds } },
+        { authorId: { not: session.user.id } },
+      ],
+    },
+    include: { author: true },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+  });
+
+  const posts = [...enemyPosts, ...otherPosts].map((p) => ({
+    id: p.id,
+    content: p.content,
+    createdAt: timeAgo(p.createdAt),
+    author: { username: p.author.username, avatarUrl: p.author.avatarUrl },
+  }));
+
   return (
     <div className="mx-auto w-full max-w-2xl">
       {/* Page header */}
@@ -62,9 +74,14 @@ export default function FeedPage() {
         </p>
       </div>
 
+      {/* Enemy posts callout */}
+      {enemyPosts.length > 0 && (
+        <div className="mb-3 text-xs text-zinc-400">From your enemies</div>
+      )}
+
       {/* Stack of posts */}
       <div className="space-y-4">
-        {POSTS.map((p) => (
+        {posts.map((p) => (
           <PostCard key={p.id} post={p} />
         ))}
       </div>
