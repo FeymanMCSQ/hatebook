@@ -1,11 +1,24 @@
 'use client';
 
+import { useState } from 'react';
+import ReactionBar, { ReactionCounts, ReactionType } from './ReactionBar';
+
 type Post = {
   id: string;
   content: string;
   createdAt: string;
   author: { username: string; avatarUrl?: string | null };
+  counts?: ReactionCounts;
+  // optional: if your GET API returns which reaction the current user made
+  userReaction?: ReactionType | null;
 };
+
+type ReactionSuccess = {
+  success: true;
+  data: { postId: string; counts: ReactionCounts };
+};
+type ReactionError = { success?: false; error: string };
+type ReactionResponse = ReactionSuccess | ReactionError;
 
 export default function PostCard({ post }: { post: Post }) {
   const avatar =
@@ -13,6 +26,46 @@ export default function PostCard({ post }: { post: Post }) {
     `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(
       post.author.username
     )}`;
+
+  const [counts, setCounts] = useState<ReactionCounts>(
+    post.counts ?? { SHADE: 0, BOO: 0, MUM: 0 }
+  );
+  const [loading, setLoading] = useState(false);
+  const [userReaction, setUserReaction] = useState<ReactionType | null>(
+    post.userReaction ?? null
+  );
+
+  async function react(type: ReactionType) {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/posts/${post.id}/reactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type }),
+      });
+
+      let json: ReactionResponse;
+      try {
+        json = (await res.json()) as ReactionResponse;
+      } catch {
+        console.error(`Invalid JSON (status ${res.status})`);
+        return;
+      }
+
+      if (!res.ok || !('success' in json) || !json.success) {
+        console.error('error' in json ? json.error : `HTTP ${res.status}`);
+        return;
+      }
+
+      setCounts(json.data.counts);
+      setUserReaction(type);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <article className="rounded-2xl border border-zinc-800/70 bg-zinc-900/60 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] ring-1 ring-black/5 transition hover:border-zinc-700 hover:bg-zinc-900/70">
@@ -35,29 +88,13 @@ export default function PostCard({ post }: { post: Post }) {
         </div>
       </header>
 
-      <footer className="mt-3 flex items-center gap-2">
-        <button
-          className="rounded-lg border border-fuchsia-600/30 bg-fuchsia-600/15 px-3 py-1.5 text-sm text-fuchsia-200 transition hover:bg-fuchsia-600/25"
-          type="button"
-          title="Throw shade"
-        >
-          Shade
-        </button>
-        <button
-          className="rounded-lg border border-rose-700/30 bg-rose-700/10 px-3 py-1.5 text-sm text-rose-200 transition hover:bg-rose-700/20"
-          type="button"
-          title="Boo"
-        >
-          Boo
-        </button>
-        <button
-          className="rounded-lg border border-zinc-700/50 bg-zinc-800/40 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-zinc-800/60"
-          type="button"
-          title="Stay mum"
-        >
-          Mum
-        </button>
-      </footer>
+      {/* Pretty button bar */}
+      <ReactionBar
+        counts={counts}
+        loading={loading}
+        userReaction={userReaction}
+        onReact={react}
+      />
     </article>
   );
 }

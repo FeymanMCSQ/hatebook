@@ -6,13 +6,12 @@ import { authConfig } from '@/lib/auth';
 function timeAgo(iso: Date) {
   const d = new Date(iso);
   const diff = Math.max(0, Date.now() - d.getTime());
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
 }
 
 export default async function FeedPage() {
@@ -25,24 +24,27 @@ export default async function FeedPage() {
     );
   }
 
-  // 1. Find enemy IDs
-  const enemies = await prisma.enemy.findMany({
-    where: { userId: session.user.id },
-    select: { enemyId: true },
-  });
-  const enemyIds = enemies.map((e) => e.enemyId);
+  // 1) Enemy ids
+  const enemyIds = (
+    await prisma.enemy.findMany({
+      where: { userId: session.user.id },
+      select: { enemyId: true },
+    })
+  ).map((e) => e.enemyId);
 
-  // 2. Get posts (enemy posts first, then others)
+  // 2) Enemy posts (exclude yourself)
   const enemyPosts = await prisma.post.findMany({
-    where: {
-      authorId: { in: enemyIds, not: session.user.id },
+    where: { authorId: { in: enemyIds, not: session.user.id } },
+    include: {
+      author: { select: { username: true, avatarUrl: true } },
+      // include type + userId so we can compute counts AND highlight the user's choice
+      reactions: { select: { type: true, userId: true } },
     },
-    include: { author: true },
     orderBy: { createdAt: 'desc' },
     take: 20,
   });
 
-  // 2) Other posts (not enemies, not you)
+  // 3) Other posts (not enemies, not you)
   const otherPosts = await prisma.post.findMany({
     where: {
       AND: [
@@ -50,45 +52,52 @@ export default async function FeedPage() {
         { authorId: { not: session.user.id } },
       ],
     },
-    include: { author: true },
+    include: {
+      author: { select: { username: true, avatarUrl: true } },
+      reactions: { select: { type: true, userId: true } },
+    },
     orderBy: { createdAt: 'desc' },
     take: 20,
   });
 
-  const posts = [...enemyPosts, ...otherPosts].map((p) => ({
-    id: p.id,
-    content: p.content,
-    createdAt: timeAgo(p.createdAt),
-    author: { username: p.author.username, avatarUrl: p.author.avatarUrl },
-  }));
+  // 4) Shape with counts (+ optional userReaction)
+  const mapPost = (p: (typeof enemyPosts)[number]) => {
+    const counts = { SHADE: 0, BOO: 0, MUM: 0 } as const;
+    const tallies = { ...counts };
+    for (const r of p.reactions) tallies[r.type]++;
+
+    const userReaction =
+      p.reactions.find((r) => r.userId === session.user.id)?.type ?? null;
+
+    return {
+      id: p.id,
+      content: p.content,
+      createdAt: timeAgo(p.createdAt),
+      author: p.author,
+      counts: tallies,
+      userReaction, // PostCard supports highlighting if you pass this
+    };
+  };
+
+  const posts = [...enemyPosts.map(mapPost), ...otherPosts.map(mapPost)];
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      {/* Page header */}
-      <div className="mb-5 rounded-2xl border border-zinc-800/70 bg-zinc-950/50 p-4 backdrop-blur">
-        <h1 className="text-xl font-semibold tracking-tight text-zinc-100">
-          Feed
-        </h1>
+      <div className="mb-5 rounded-2xl border border-zinc-800/70 bg-zinc-950/50 p-4">
+        <h1 className="text-xl font-semibold text-zinc-100">Feed</h1>
         <p className="mt-1 text-sm text-zinc-400">
           Make enemies. Throw shade. Rise in the leaderboard.
         </p>
       </div>
 
-      {/* Enemy posts callout */}
       {enemyPosts.length > 0 && (
         <div className="mb-3 text-xs text-zinc-400">From your enemies</div>
       )}
 
-      {/* Stack of posts */}
       <div className="space-y-4">
         {posts.map((p) => (
           <PostCard key={p.id} post={p} />
         ))}
-      </div>
-
-      {/* Ambient gradient accents */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 -z-10 opacity-40">
-        <div className="mx-auto h-40 max-w-xl rounded-full bg-gradient-to-t from-fuchsia-700/20 to-transparent blur-3xl" />
       </div>
     </div>
   );
