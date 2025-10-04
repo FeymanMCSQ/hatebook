@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+
 import ReactionBar, { ReactionCounts, ReactionType } from './ReactionBar';
 
 type Post = {
@@ -70,16 +72,21 @@ export default function PostCard({ post }: { post: Post }) {
   return (
     <article className="rounded-2xl border border-zinc-800/70 bg-zinc-900/60 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] ring-1 ring-black/5 transition hover:border-zinc-700 hover:bg-zinc-900/70">
       <header className="flex items-start gap-3">
-        <img
-          src={avatar}
-          alt=""
-          className="h-10 w-10 rounded-full border border-zinc-800 bg-zinc-950 object-cover"
-        />
+        <Link href={`/u/${post.author.username}`} className="shrink-0">
+          <img
+            src={avatar}
+            alt=""
+            className="h-10 w-10 rounded-full border border-zinc-800 bg-zinc-950 object-cover"
+          />
+        </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate font-medium text-zinc-100">
+            <Link
+              href={`/u/${post.author.username}`}
+              className="truncate font-medium text-zinc-100 hover:underline"
+            >
               {post.author.username}
-            </span>
+            </Link>
             <span className="text-xs text-zinc-500">• {post.createdAt}</span>
           </div>
           <p className="mt-2 whitespace-pre-wrap text-zinc-200">

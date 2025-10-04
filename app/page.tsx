@@ -103,11 +103,13 @@
 // }
 
 import { Button } from '@/components/ui/button';
+import MiddleFingerLoader from '@/components/middleFinger/MiddleFingerLoader';
 
 export default function Home() {
   return (
     <main className="flex h-screen items-center justify-center">
       <Button variant="default">Throw Shade</Button>
+      <MiddleFingerLoader />
     </main>
   );
 }

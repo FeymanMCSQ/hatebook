@@ -1,0 +1,149 @@
+/* ===== Layout ===== */
+.hand {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 5px;
+  height: 160px;
+  margin: 30px auto;
+  animation: handPulse 2s ease-in-out infinite;
+}
+
+/* f3 + thumb live together here */
+.finger-group {
+  position: relative; /* establishes positioning context for .thumb */
+  display: inline-flex;
+  align-items: flex-end;
+}
+
+/* ===== Finger base ===== */
+.finger {
+  position: relative;
+  width: 46px;
+  background: #d6b48a;
+  border: 3px solid #3b2b1f;
+  border-radius: 18px 18px 10px 10px;
+  box-shadow: inset 0 -5px #c49d76;
+  z-index: 1;
+}
+
+/* nails (centered) */
+.finger::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  right: 8px;
+  height: 26px;
+  background: #e6c8a6;
+  border: 1px solid #3d2c1d;
+  border-radius: 8px;
+}
+
+/* crease line */
+.finger::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 40px;
+  height: 3px;
+  background: transparent;
+  box-shadow: 0 0 0 1.5px #3b2b1f inset;
+  opacity: 0.35;
+  border-radius: 3px;
+}
+
+/* heights */
+.f1 {
+  height: 82px;
+  border-bottom-left-radius: 20px;
+}
+.f2 {
+  height: 100px;
+}
+.middle {
+  height: 150px;
+  animation: extend 1.6s ease-in-out infinite;
+}
+.f3 {
+  height: 100px;
+}
+.thumb {
+  position: absolute;
+  bottom: calc(100% - 3px);
+  left: -3px;
+
+  width: 60px; /* wider stub */
+  height: 46px; /* short thumb */
+
+  background: #d6b48a;
+  border: 3px solid #3b2b1f;
+  border-radius: 20px 8px 8px 20px; /* round left side only */
+  box-shadow: inset 0 -4px #c49d76;
+
+  z-index: 3;
+}
+
+/* vertically thicker, horizontally shorter nail */
+.thumb::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 5px; /* more inward = narrower horizontally */
+  right: 25px;
+  height: 26px; /* taller vertically */
+  background: #e6c8a6;
+  border: 1px solid #3d2c1d;
+  border-radius: 8px; /* keeps it pill/oval-shaped */
+}
+
+/* vertical crease behind nail */
+.thumb::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  right: 16px; /* positioned behind/right of nail */
+  width: 3px; /* vertical strip */
+  background: transparent;
+  box-shadow: 0 0 0 1.5px #3b2b1f inset;
+  opacity: 0.35;
+  border-radius: 2px;
+}
+
+/* ===== OPTIONAL VARIANTS (no overlap) =====
+   Add one of these classes to the wrapper: <div class="finger-group thumb-left"> …  */
+.finger-group.thumb-left .thumb {
+  /* lies to the LEFT of f3 */
+  left: 3px; /* align with left border of f3 */
+  transform-origin: bottom left;
+  transform: translateX(-100%) rotate(-90deg); /* move left by its width, then rotate */
+}
+.finger-group.thumb-right .thumb {
+  /* lies to the RIGHT of f3 */
+  left: calc(100% - 3px); /* align with right border of f3 */
+  transform-origin: bottom left;
+  transform: rotate(-90deg); /* rotate outward to the right */
+}
+
+/* ===== Animations (optional) ===== */
+@keyframes extend {
+  0%,
+  100% {
+    height: 106px;
+  }
+  50% {
+    height: 150px;
+  }
+}
+@keyframes handPulse {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(1.5px);
+  }
+}
