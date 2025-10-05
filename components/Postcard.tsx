@@ -1,9 +1,10 @@
+// components/PostCard.tsx
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
-
 import ReactionBar, { ReactionCounts, ReactionType } from './ReactionBar';
+import CommentBox, { Reply } from './commentBox';
 
 type Post = {
   id: string;
@@ -11,8 +12,9 @@ type Post = {
   createdAt: string;
   author: { username: string; avatarUrl?: string | null };
   counts?: ReactionCounts;
-  // optional: if your GET API returns which reaction the current user made
   userReaction?: ReactionType | null;
+  // NEW (optional): pass from your page via Prisma include
+  replies?: Reply[];
 };
 
 type ReactionSuccess = {
@@ -35,6 +37,13 @@ export default function PostCard({ post }: { post: Post }) {
   const [loading, setLoading] = useState(false);
   const [userReaction, setUserReaction] = useState<ReactionType | null>(
     post.userReaction ?? null
+  );
+
+  // NEW: local comments state (toggle only)
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const initialReplies = post.replies ?? [];
+  const [commentCount, setCommentCount] = useState<number>(
+    initialReplies.length
   );
 
   async function react(type: ReactionType) {
@@ -95,13 +104,24 @@ export default function PostCard({ post }: { post: Post }) {
         </div>
       </header>
 
-      {/* Pretty button bar */}
       <ReactionBar
         counts={counts}
         loading={loading}
         userReaction={userReaction}
         onReact={react}
+        // NEW: wire up comments button
+        onToggleComments={() => setCommentsOpen((v) => !v)}
+        commentCount={commentCount}
+        commentsOpen={commentsOpen}
       />
+
+      {commentsOpen && (
+        <CommentBox
+          postId={post.id}
+          initialReplies={initialReplies}
+          onPosted={() => setCommentCount((n) => n + 1)}
+        />
+      )}
     </article>
   );
 }
