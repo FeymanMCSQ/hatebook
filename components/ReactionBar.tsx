@@ -32,7 +32,7 @@ export default function ReactionBar({
       [
         {
           key: 'SHADE' as const,
-          label: 'Shade',
+          label: 'KYS 😇',
           class:
             'border border-fuchsia-600/30 bg-fuchsia-600/15 text-fuchsia-200 ' +
             'hover:bg-fuchsia-600/25 focus:ring-fuchsia-500/40',
@@ -46,7 +46,7 @@ export default function ReactionBar({
         },
         {
           key: 'MUM' as const,
-          label: 'Mum',
+          label: 'Screw you',
           class:
             'border border-zinc-700/50 bg-zinc-800/40 text-zinc-300 ' +
             'hover:bg-zinc-800/60 focus:ring-zinc-600/40',

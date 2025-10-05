@@ -1,4 +1,3 @@
-// components/Navbar.tsx
 'use client';
 
 import Link from 'next/link';
@@ -56,24 +55,22 @@ export default function Navbar() {
           )}
 
           {status !== 'loading' && !session?.user && (
-            <>
-              <Link
-                href="/signin"
-                className="rounded-lg border border-fuchsia-700/40 bg-fuchsia-700/20 px-3 py-1.5 text-sm font-medium text-fuchsia-100 hover:bg-fuchsia-700/30"
-              >
-                Sign in
-              </Link>
-            </>
+            <Link
+              href="/signin"
+              className="rounded-lg border border-fuchsia-700/40 bg-fuchsia-700/20 px-3 py-1.5 text-sm font-medium text-fuchsia-100 hover:bg-fuchsia-700/30"
+            >
+              Sign in
+            </Link>
           )}
 
           {session?.user && (
             <>
+              {/* Avatar */}
               <Link
                 href="/profile"
                 className="group inline-flex items-center gap-2 rounded-lg border border-zinc-800/70 bg-zinc-900/40 px-2.5 py-1.5"
                 title={session.user.username}
               >
-                {/* Avatar */}
                 <img
                   src={
                     session.user.avatarUrl ??
@@ -88,6 +85,7 @@ export default function Navbar() {
                   {session.user.username}
                 </span>
               </Link>
+
               <button
                 onClick={() => signOut({ redirect: false })}
                 className="rounded-lg border border-rose-800/40 bg-rose-900/10 px-3 py-1.5 text-sm font-medium text-rose-200/90 hover:bg-rose-900/20"
@@ -95,6 +93,15 @@ export default function Navbar() {
               >
                 Sign out
               </button>
+
+              {/* 👇 Stealth loading shortcut */}
+              <Link
+                href="/loading"
+                title="Presentation shortcut"
+                className="ml-2 rounded-full border border-transparent px-2 py-1 text-xs text-zinc-800 hover:text-zinc-600 focus:outline-none"
+              >
+                ⚙️
+              </Link>
             </>
           )}
         </div>

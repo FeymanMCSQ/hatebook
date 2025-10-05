@@ -1,5 +1,4 @@
 // app/leaderboard/page.tsx
-
 type Row = {
   rank: number;
   username: string;
@@ -23,18 +22,113 @@ function avatarFor(username: string) {
   )}`;
 }
 
-export default function LeaderboardPage() {
+function Medal({ rank }: { rank: 1 | 2 | 3 }) {
+  const map = {
+    1: {
+      label: '1st',
+      bg: 'from-amber-400 to-yellow-300',
+      ring: 'ring-amber-400',
+      emoji: '👑',
+    },
+    2: {
+      label: '2nd',
+      bg: 'from-slate-300 to-slate-100',
+      ring: 'ring-slate-300',
+      emoji: '🥈',
+    },
+    3: {
+      label: '3rd',
+      bg: 'from-orange-400 to-amber-300',
+      ring: 'ring-orange-400',
+      emoji: '🥉',
+    },
+  } as const;
+  const m = map[rank];
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold text-black bg-gradient-to-b ${m.bg} ring-1 ${m.ring} ring-offset-0`}
+    >
+      <span>{m.emoji}</span>
+      <span>{m.label}</span>
+    </div>
+  );
+}
+
+function LegendCard({ row, accent }: { row: Row; accent: string }) {
+  return (
+    <div
+      className={`relative overflow-hidden rounded-2xl border border-zinc-800/70 bg-zinc-950/60 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] ring-1 ring-black/5`}
+    >
+      {/* glow */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute -inset-16 -z-10 blur-3xl opacity-30 bg-${accent}`}
+      />
+      <div className="flex items-center gap-3">
+        <img
+          src={row.avatarUrl ?? avatarFor(row.username)}
+          alt=""
+          className="h-12 w-12 rounded-full border border-zinc-800 bg-zinc-900 object-cover"
+        />
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate text-lg font-semibold text-zinc-100">
+              {row.username}
+            </h3>
+            {row.rank <= 3 && <Medal rank={row.rank as 1 | 2 | 3} />}
+          </div>
+          <p className="mt-0.5 text-sm text-zinc-400">
+            Shade{' '}
+            <span className="font-semibold text-fuchsia-200">
+              {row.shadeScore}
+            </span>{' '}
+            · Enemies{' '}
+            <span className="font-medium text-zinc-200">{row.enemyCount}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function LeaderboardPage() {
+  const top3 = DATA.slice(0, 3);
+  const rest = DATA.slice(3);
+
+  return (
+    <div className="mx-auto w-full max-w-3xl">
       {/* Header */}
-      <div className="mb-5 rounded-2xl border border-zinc-800/70 bg-zinc-950/60 p-4">
-        <h1 className="text-xl font-semibold text-zinc-100">Leaderboard</h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          Highest shade scores. Pettiest icons.
+      <div className="mb-6 rounded-2xl border border-zinc-800/70 bg-zinc-950/60 p-5">
+        <h1 className="text-2xl font-semibold text-zinc-100">Leaderboard</h1>
+        <p className="mt-2 text-sm text-zinc-400">
+          Casual hatred is for the weak.{' '}
+          <span className="text-zinc-200">Let’s compete.</span>
         </p>
+        <div className="mt-4 rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+            Ranking Criteria
+          </h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-300">
+            <li>
+              <span className="text-zinc-100">Shade Score</span> (primary):
+              earned from reactions to your posts (Shade &gt; Boo &gt; Mum).
+            </li>
+            <li>
+              <span className="text-zinc-100">Enemy Count</span> (tiebreaker):
+              more enemies, higher seed. (We don’t judge. We rank.)
+            </li>
+          </ul>
+        </div>
       </div>
 
-      {/* Table-ish list */}
+      {/* Legends */}
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <LegendCard row={top3[0]} accent="fuchsia-600/30" />
+        <LegendCard row={top3[1]} accent="violet-500/30" />
+        <LegendCard row={top3[2]} accent="rose-500/30" />
+      </div>
+
+      {/* The Pack */}
       <div className="overflow-hidden rounded-2xl border border-zinc-800/70">
         <div className="grid grid-cols-[3rem,1fr,7rem,7rem] items-center gap-2 border-b border-zinc-800/70 bg-zinc-950/70 px-4 py-2 text-xs uppercase tracking-wide text-zinc-400">
           <div>#</div>
@@ -44,20 +138,22 @@ export default function LeaderboardPage() {
         </div>
 
         <ul className="divide-y divide-zinc-800/70">
-          {DATA.map((r) => (
+          {rest.map((r) => (
             <li
               key={r.username}
-              className="grid grid-cols-[3rem,1fr,7rem,7rem] items-center gap-2 bg-zinc-900/40 px-4 py-3 hover:bg-zinc-900/60"
+              className="grid grid-cols-[3rem,1fr,7rem,7rem] items-center gap-2 bg-zinc-900/40 px-4 py-3 transition hover:bg-zinc-900/60"
             >
-              <div className="font-semibold text-zinc-400">#{r.rank}</div>
+              <div className="font-semibold text-zinc-500">#{r.rank}</div>
 
-              <div className="flex items-center gap-3 min-w-0">
-                <img
-                  src={r.avatarUrl ?? avatarFor(r.username)}
-                  alt=""
-                  className="h-8 w-8 rounded-full border border-zinc-800 bg-zinc-950"
-                />
-                <div className="truncate text-zinc-100">{r.username}</div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={r.avatarUrl ?? avatarFor(r.username)}
+                    alt=""
+                    className="h-8 w-8 rounded-full border border-zinc-800 bg-zinc-950"
+                  />
+                  <span className="truncate text-zinc-100">{r.username}</span>
+                </div>
               </div>
 
               <div className="text-right font-medium text-fuchsia-200">
@@ -69,8 +165,11 @@ export default function LeaderboardPage() {
         </ul>
       </div>
 
-      {/* Ambient glow */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 -z-10 opacity-40">
+      {/* Ambient gradient accents */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 bottom-0 -z-10 opacity-40"
+      >
         <div className="mx-auto h-40 max-w-xl rounded-full bg-gradient-to-t from-fuchsia-700/20 to-transparent blur-3xl" />
       </div>
     </div>
