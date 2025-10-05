@@ -290,7 +290,6 @@ export default async function LeaderboardPage() {
   for (const r of reactions) {
     const authorId = r.post.authorId;
     const prev = score.get(authorId) ?? 0;
-    // @ts-expect-error - r.type is ReactionType enum matching WEIGHTS keys
     score.set(authorId, prev + WEIGHTS[r.type]);
   }
 

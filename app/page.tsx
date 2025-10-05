@@ -27,7 +27,7 @@ export default function Home() {
 
         {/* Tagline with “tech” pulse */}
         <p className="mt-6 max-w-[38ch] animate-tech-pulse text-balance text-lg text-zinc-300/90 md:text-xl">
-          Fuck Love. Spread Hate.
+          Screw Love. Lets Spread Hate.
         </p>
 
         {/* CTAs */}
